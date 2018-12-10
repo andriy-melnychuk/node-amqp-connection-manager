@@ -55,6 +55,7 @@ export default class AmqpConnectionManager extends EventEmitter {
         this._channels = [];
 
         this._currentUrl = 0;
+        this._currentConnection = null;
         this.connectionOptions = options.connectionOptions;
 
         this.heartbeatIntervalInSeconds = options.heartbeatIntervalInSeconds || HEARTBEAT_IN_SECONDS;
@@ -141,6 +142,12 @@ export default class AmqpConnectionManager extends EventEmitter {
 
             return amqp.connect(urlUtils.format(amqpUrl), connectionOptions)
             .then(connection => {
+                if (this._closed) {
+                    this._connecting = false;
+                    this._currentConnection = null;
+                    return connection.close();
+                }
+
                 this._currentConnection = connection;
 
                 //emit 'blocked' when RabbitMQ server decides to block the connection (resources running low)

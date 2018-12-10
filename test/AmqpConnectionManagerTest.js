@@ -2,7 +2,8 @@ import chai from 'chai';
 import chaiString from 'chai-string';
 import * as promiseTools from 'promise-tools';
 import proxyquire from 'proxyquire';
-import { FakeAmqp } from './fixtures';
+import { FakeAmqp, FakeConnection } from './fixtures';
+import sinon from 'sinon';
 
 chai.use(chaiString);
 const { expect } = chai;
@@ -60,6 +61,22 @@ describe('AmqpConnectionManager', function() {
                     expect(conn._closed, 'connection closed').to.be.true;
                 }).then(resolve, reject)
             );
+        })
+    );
+
+    it('should close connection when close method is called before connection is established', async () =>
+        new Promise(function (resolve) {
+            let closeSpy = FakeConnection.prototype.close = sinon.spy();
+            amqp = new AmqpConnectionManager('amqp://localhost');
+            amqp.close();
+
+            expect(amqp._connecting).to.be.true;
+
+            setTimeout(() => {
+                expect(closeSpy.calledOnce).to.be.true;
+                expect(amqp._connecting).to.be.false;
+                resolve();
+            }, 500);
         })
     );
 
